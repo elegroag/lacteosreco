@@ -8,7 +8,8 @@ import { StorageService } from './services/storage';
 import { useConnectivity } from './hooks/useConnectivity';
 import { AppState, Finca } from './types';
 import { LogOut, Wifi, WifiOff, User, Lock, Loader2 } from 'lucide-react';
-import { ApiService } from './services/api';
+// import { ApiService } from './services/api'; // Registro 100% local; no se usa
+import { initStorage } from './services/storageAdapter';
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -27,17 +28,21 @@ function App() {
   const isOnline = useConnectivity();
 
   useEffect(() => {
-    // Verificar si hay un usuario logueado al cargar la app
-    const savedUser = StorageService.getUser();
-    if (savedUser) {
-      setAppState(prev => ({
-        ...prev,
-        isLoggedIn: true,
-        currentUser: savedUser,
-        currentView: 'farmSelection'
-      }));
-    }
-  }, []);
+    // Inicializar almacenamiento y luego verificar usuario guardado
+    const boot = async () => {
+      await initStorage();
+      const savedUser = StorageService.getUser();
+      if (savedUser) {
+        setAppState(prev => ({
+          ...prev,
+          isLoggedIn: true,
+          currentUser: savedUser,
+          currentView: 'farmSelection'
+        }));
+      }
+    };
+    boot();
+   }, []);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     const id = Date.now();
@@ -218,23 +223,15 @@ const RegisterView: React.FC<{
       showNotification('Las contraseñas no coinciden', 'error');
       return;
     }
-    if (!isOnline) {
-      showNotification('Se requiere conexión para registrarse', 'error');
-      return;
-    }
     setLoading(true);
     try {
-      const res = await ApiService.register(usuario, contrasena);
-      if (res?.success) {
-        const user = { id: res.userId, usuario, contrasena };
-        StorageService.saveUser(user);
-        showNotification('Registro exitoso. Sesión iniciada.', 'success');
-        onRegistered(user);
-      } else {
-        showNotification(res?.message || 'No se pudo registrar', 'error');
-      }
+      // Registro 100% local (independiente de conectividad)
+      const user = { id: Date.now(), usuario, contrasena };
+      StorageService.saveUser(user);
+      showNotification('Registro local creado. Sesión iniciada.', 'success');
+      onRegistered(user);
     } catch (err: any) {
-      showNotification(err?.message || 'Error registrando usuario', 'error');
+      showNotification(err?.message || 'Error registrando usuario localmente', 'error');
     } finally {
       setLoading(false);
     }

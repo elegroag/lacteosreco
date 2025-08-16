@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { User, Lock, LogIn, Loader2 } from 'lucide-react';
-import { SyncService } from '../services/sync';
 import { StorageService } from '../services/storage';
 
 interface LoginProps {
@@ -25,29 +24,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowR
     setIsLoading(true);
     
     try {
-      // Intentar autenticar con el servidor si hay conexión
-      if (SyncService.isOnline()) {
-        const user = await SyncService.authenticateUser(usuario, contrasena);
-        if (user) {
-          const userToSave = { ...user, contrasena };
-          StorageService.saveUser(userToSave);
-          onLogin(userToSave);
-          showNotification('¡Bienvenido! Sesión iniciada correctamente', 'success');
-        } else {
-          showNotification('Credenciales incorrectas', 'error');
-        }
+      const savedUser = StorageService.getUser();
+      if (savedUser && savedUser.usuario === usuario && savedUser.contrasena === contrasena) {
+        onLogin(savedUser);
+        showNotification('¡Bienvenido! Sesión iniciada correctamente', 'success');
       } else {
-        // Verificar credenciales guardadas localmente
-        const savedUser = StorageService.getUser();
-        if (savedUser && savedUser.usuario === usuario && savedUser.contrasena === contrasena) {
-          onLogin(savedUser);
-          showNotification('Sesión iniciada (modo offline)', 'info');
-        } else {
-          showNotification('Sin conexión. No se pueden verificar las credenciales', 'error');
-        }
+        showNotification('Usuario o contraseña incorrectos', 'error');
       }
     } catch (error) {
-      showNotification('Error de conexión. Intenta nuevamente', 'error');
+      showNotification('Error validando credenciales en almacenamiento local', 'error');
     } finally {
       setIsLoading(false);
     }

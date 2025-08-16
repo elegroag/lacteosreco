@@ -6,9 +6,10 @@ import { StorageService } from '../services/storage';
 interface LoginProps {
   onLogin: (user: any) => void;
   showNotification: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
+  onShowRegister: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, showNotification }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister }) => {
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,8 +29,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, showNotification }) => {
       if (SyncService.isOnline()) {
         const user = await SyncService.authenticateUser(usuario, contrasena);
         if (user) {
-          StorageService.saveUser(user);
-          onLogin(user);
+          const userToSave = { ...user, contrasena };
+          StorageService.saveUser(userToSave);
+          onLogin(userToSave);
           showNotification('¡Bienvenido! Sesión iniciada correctamente', 'success');
         } else {
           showNotification('Credenciales incorrectas', 'error');
@@ -108,6 +110,16 @@ export const Login: React.FC<LoginProps> = ({ onLogin, showNotification }) => {
             {isLoading ? 'Verificando...' : 'Iniciar Sesión'}
           </button>
         </form>
+
+        <div className="mt-4 text-center text-sm">
+          <button
+            type="button"
+            onClick={onShowRegister}
+            className="text-green-600 hover:underline"
+          >
+            ¿No tienes cuenta? Regístrate
+          </button>
+        </div>
 
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>Usuarios de prueba:</p>

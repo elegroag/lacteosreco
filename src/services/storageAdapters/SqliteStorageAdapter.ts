@@ -76,6 +76,26 @@ export class SqliteStorageAdapter implements IStorageAdapter {
     saveUser(user: any): void {
         this.cache.user = user;
         this.persistMeta('USER', JSON.stringify(user));
+        // Persistir también en la tabla user (un solo registro)
+        (async () => {
+            try {
+                if (!this.db) return;
+                await this.db.run('DELETE FROM user');
+                await this.db.run(
+                    `INSERT INTO user (id, usuario, contrasena, email, telefono, cedula) VALUES (?, ?, ?, ?, ?, ?)`,
+                    [
+                        user?.id ?? null,
+                        user?.usuario ?? '',
+                        user?.contrasena ?? null,
+                        user?.email ?? null,
+                        user?.telefono ?? null,
+                        user?.cedula ?? null,
+                    ]
+                );
+            } catch (err) {
+                console.warn('[SqliteStorageAdapter] saveUser persistencia en tabla user falló', err);
+            }
+        })();
     }
     getUser(): any | null {
         return this.cache.user;
@@ -83,6 +103,14 @@ export class SqliteStorageAdapter implements IStorageAdapter {
     clearUser(): void {
         this.cache.user = null;
         this.persistMeta('USER', null);
+        (async () => {
+            try {
+                if (!this.db) return;
+                await this.db.run('DELETE FROM user');
+            } catch (err) {
+                console.warn('[SqliteStorageAdapter] clearUser limpiar tabla user falló', err);
+            }
+        })();
     }
 
     // Fincas
@@ -139,6 +167,27 @@ export class SqliteStorageAdapter implements IStorageAdapter {
             if (row.key === 'FINCAS') this.cache.fincas = row.value ? JSON.parse(row.value) : [];
             if (row.key === 'LAST_SYNC') this.cache.lastSync = row.value ?? null;
         }
+
+        // Si no hay usuario en meta, intentar cargar desde la tabla user
+        if (!this.cache.user) {
+            try {
+                const userRes = await this.db.query('SELECT id, usuario, contrasena, email, telefono, cedula FROM user LIMIT 1');
+                const u = (userRes.values || [])[0];
+                if (u) {
+                    this.cache.user = {
+                        id: u.id,
+                        usuario: u.usuario,
+                        contrasena: u.contrasena ?? undefined,
+                        email: u.email ?? undefined,
+                        telefono: u.telefono ?? undefined,
+                        cedula: u.cedula ?? undefined,
+                    };
+                }
+            } catch (err) {
+                console.warn('[SqliteStorageAdapter] loadCacheFromDb: no se pudo leer tabla user', err);
+            }
+        }
+
         // registros
         const regRes = await this.db.query('SELECT id, fkFinca, cantidad, saldo, fechaHora, observaciones, fkUsuario, synced FROM registros ORDER BY date(fechaHora) DESC');
         const regs = regRes.values || [];

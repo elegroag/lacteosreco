@@ -2,7 +2,10 @@
 export interface User {
   id: number;
   usuario: string;
-  contrasena: string;
+  contrasena?: string;
+  email?: string;
+  telefono?: string;
+  cedula?: string;
 }
 
 export interface Finca {
@@ -24,7 +27,7 @@ export interface AppState {
   isLoggedIn: boolean;
   currentUser: User | null;
   selectedFarm: Finca | null;
-  currentView: 'login' | 'farmSelection' | 'milkRegistration';
+  currentView: 'login' | 'register' | 'farmSelection' | 'milkRegistration';
 }
 
 export interface SyncStatus {

@@ -45,6 +45,12 @@ export const ApiService = {
       body: JSON.stringify({ usuario, contrasena }),
     });
   },
+  register: async (usuario: string, contrasena: string) => {
+    return apiRequest('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ usuario, contrasena }),
+    });
+  },
 
   // Fincas
   getFincas: async () => {

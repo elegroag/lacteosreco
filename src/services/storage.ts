@@ -1,74 +1,56 @@
-// Servicio para manejo de almacenamiento local
-const STORAGE_KEYS = {
-  USER: 'milk_app_user',
-  FINCAS: 'milk_app_fincas',
-  REGISTROS: 'milk_app_registros',
-  LAST_SYNC: 'milk_app_last_sync',
-};
+import { getStorageAdapter } from './storageAdapter';
 
+// Servicio para manejo de almacenamiento local/nativo vía adaptador
 export class StorageService {
+  private static get a() {
+    return getStorageAdapter();
+  }
+
   // Usuario logueado
   static saveUser(user: any) {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    this.a.saveUser(user);
   }
 
   static getUser() {
-    const user = localStorage.getItem(STORAGE_KEYS.USER);
-    return user ? JSON.parse(user) : null;
+    return this.a.getUser();
   }
 
   static clearUser() {
-    localStorage.removeItem(STORAGE_KEYS.USER);
+    this.a.clearUser();
   }
 
   // Fincas
   static saveFincas(fincas: any[]) {
-    localStorage.setItem(STORAGE_KEYS.FINCAS, JSON.stringify(fincas));
+    this.a.saveFincas(fincas);
   }
 
   static getFincas() {
-    const fincas = localStorage.getItem(STORAGE_KEYS.FINCAS);
-    return fincas ? JSON.parse(fincas) : [];
+    return this.a.getFincas();
   }
 
   // Registros de leche
   static saveRegistro(registro: any) {
-    const registros = this.getRegistros();
-    const newRegistro = {
-      ...registro,
-      id: Date.now(), // ID temporal
-      synced: false,
-    };
-    registros.push(newRegistro);
-    localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
-    return newRegistro;
+    return this.a.saveRegistro(registro);
   }
 
   static getRegistros() {
-    const registros = localStorage.getItem(STORAGE_KEYS.REGISTROS);
-    return registros ? JSON.parse(registros) : [];
+    return this.a.getRegistros();
   }
 
   static markRegistrosAsSynced(syncedIds: number[]) {
-    const registros = this.getRegistros();
-    const updatedRegistros = registros.map((registro: any) => 
-      syncedIds.includes(registro.id) 
-        ? { ...registro, synced: true }
-        : registro
-    );
-    localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(updatedRegistros));
+    this.a.markRegistrosAsSynced(syncedIds);
   }
 
   static getPendingRegistros() {
-    return this.getRegistros().filter((registro: any) => !registro.synced);
+    return this.a.getPendingRegistros();
   }
 
   // Última sincronización
   static setLastSync(timestamp: string) {
-    localStorage.setItem(STORAGE_KEYS.LAST_SYNC, timestamp);
+    this.a.setLastSync(timestamp);
   }
 
   static getLastSync() {
-    return localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
+    return this.a.getLastSync();
   }
 }

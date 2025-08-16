@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+android/.gradle/
+android/.idea
+android/gradel
+android/app
+android/capacitor-cordova-*
+*.jar
+*.bat

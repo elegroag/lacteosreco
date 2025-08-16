@@ -1,11 +1,12 @@
 // Configuración de la API
-// En desarrollo usamos ruta relativa para aprovechar el proxy de Vite y evitar CORS
-const API_BASE_URL = '/api';
+// En desarrollo web usamos ruta relativa para aprovechar el proxy de Vite y evitar CORS
+// En móvil (Capacitor), configurar VITE_API_BASE_URL, por ejemplo: https://dibeltran03.alwaysdata.net/api
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Función helper para hacer requests
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
@@ -24,11 +25,11 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   try {
     const response = await fetch(url, finalOptions);
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Error en la petición');
     }
-    
+
     return data;
   } catch (error) {
     console.error('Error en API request:', error);

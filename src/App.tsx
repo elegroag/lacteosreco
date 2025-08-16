@@ -1,7 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { LogOut, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, Wifi, WifiOff, Home, Droplet, RefreshCw } from 'lucide-react';
 import { initStorage } from './services/storageAdapter';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, NavLink } from 'react-router-dom';
 // import { SyncManager } from './components/SyncManager';
 import { Notification } from './components/Notification';
 import { StorageService } from './services/storage';
@@ -13,6 +13,7 @@ const LoginPage = lazy(() => import('./pages/Login'));
 const FarmSelectionPage = lazy(() => import('./pages/FarmSelection'));
 const MilkRegistrationPage = lazy(() => import('./pages/MilkRegistration'));
 const RegisterPage = lazy(() => import('./pages/Register'));
+const SyncPage = lazy(() => import('./pages/Sync'));
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -29,6 +30,7 @@ function App() {
 
   const isOnline = useConnectivity();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Inicializar almacenamiento, sembrar finca por defecto y luego verificar usuario guardado
@@ -49,13 +51,19 @@ function App() {
           isLoggedIn: true,
           currentUser: savedUser
         }));
-        navigate('/fincas', { replace: true });
+        // Solo auto-navegar si estamos en la raíz para no sobreescribir rutas manuales (p.ej. /sync)
+        if (location.pathname === '/') {
+          navigate('/fincas', { replace: true });
+        }
       } else {
-        navigate('/login', { replace: true });
+        // Solo redirigir automáticamente desde la raíz
+        if (location.pathname === '/') {
+          navigate('/login', { replace: true });
+        }
       }
     };
     boot();
-  }, []);
+  }, [location.pathname]);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     const id = Date.now();
@@ -112,7 +120,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header con estado de conexión y logout */}
       {appState.isLoggedIn && (
         <div className="bg-white shadow-sm border-b">
@@ -196,10 +204,59 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route 
+            path="/sync" 
+            element={
+              <ProtectedRoute isLoggedIn={appState.isLoggedIn}>
+                <SyncPage 
+                  isOnline={isOnline}
+                  currentUser={appState.currentUser}
+                  showNotification={showNotification}
+                />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
 
+      {/* Footer de navegación fijo (solo logueado) */}
+      {appState.isLoggedIn && (
+        <nav className="fixed bottom-0 inset-x-0 bg-white border-t shadow-md">
+          <div className="max-w-2xl mx-auto">
+            <ul className="flex items-center justify-around py-2">
+              <li>
+                <NavLink
+                  to="/fincas"
+                  className={({ isActive }) => `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`}
+                >
+                  <Home className="w-5 h-5" />
+                  Fincas
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/registros"
+                  className={({ isActive }) => `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`}
+                >
+                  <Droplet className="w-5 h-5" />
+                  Registros
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/sync"
+                  className={({ isActive }) => `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`}
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Sync
+                </NavLink>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      )}
+ 
       {/* Gestor de sincronización deshabilitado: guardado local únicamente */}
       {/* <SyncManager 
         isOnline={isOnline}

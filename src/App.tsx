@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { LogOut, Wifi, WifiOff } from 'lucide-react';
 import { initStorage } from './services/storageAdapter';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { SyncManager } from './components/SyncManager';
+// import { SyncManager } from './components/SyncManager';
 import { Notification } from './components/Notification';
 import { StorageService } from './services/storage';
 import { useConnectivity } from './hooks/useConnectivity';
@@ -200,11 +200,11 @@ function App() {
         </Routes>
       </Suspense>
 
-      {/* Gestor de sincronización */}
-      <SyncManager 
+      {/* Gestor de sincronización deshabilitado: guardado local únicamente */}
+      {/* <SyncManager 
         isOnline={isOnline}
         showNotification={showNotification}
-      />
+      /> */}
 
       {/* Notificaciones */}
       {notifications.map(notification => (

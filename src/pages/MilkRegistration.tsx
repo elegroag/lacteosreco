@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Milk, Save, ArrowLeft, Clock, User, MapPin, DollarSign } from 'lucide-react';
+import { Milk, Save, ArrowLeft, Clock, MapPin, DollarSign } from 'lucide-react';
 import { StorageService } from '../services/storage';
-import { SyncService } from '../services/sync';
 import { RegistroLeche, Finca } from '../types';
 
 interface MilkRegistrationProps {
@@ -64,21 +63,20 @@ const MilkRegistration: React.FC<MilkRegistrationProps> = ({
     setSaldo('');
     
     showNotification(
-      `Registro guardado ${isOnline ? '(sincronizando...)' : '(en caché)'}`,
+      'Registro guardado localmente',
       'success'
     );
 
-    // Si estamos en línea, intentar sincronizar inmediatamente
-    if (isOnline) {
-      const result = await SyncService.syncPendingRecords();
-      if (result.success) {
-        showNotification(`Sincronizado ${result.syncedCount} registro(s)`, 'success');
-        // Recargar lista desde storage para reflejar estados actualizados
-        loadRegistros();
-      } else {
-        showNotification(`No se pudo sincronizar: ${result.error}`, 'error');
-      }
-    }
+    // Sincronización deshabilitada: solo guardado local
+    // if (isOnline) {
+    //   const result = await SyncService.syncPendingRecords();
+    //   if (result.success) {
+    //     showNotification(`Sincronizado ${result.syncedCount} registro(s)`, 'success');
+    //     loadRegistros();
+    //   } else {
+    //     showNotification(`No se pudo sincronizar: ${result.error}`, 'error');
+    //   }
+    // }
   };
 
   const formatDate = (isoString: string) => {

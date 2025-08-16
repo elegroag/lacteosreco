@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, RefreshCw, Loader2, ArrowRight } from 'lucide-react';
-import { SyncService } from '../services/sync';
+// import { SyncService } from '../services/sync';
 import { StorageService } from '../services/storage';
 import { Finca } from '../types';
 
@@ -26,37 +26,21 @@ const FarmSelection: React.FC<FarmSelectionProps> = ({
 
   const loadFincas = async () => {
     setIsLoading(true);
-    
     try {
-      if (isOnline) {
-        // Cargar fincas del servidor y actualizar cache
-        const serverFincas = await SyncService.fetchFincas();
-        StorageService.saveFincas(serverFincas);
-        setFincas(serverFincas);
-        showNotification('Fincas actualizadas desde el servidor', 'success');
-      } else {
-        // Cargar fincas del cache local
-        const cachedFincas = StorageService.getFincas();
-        setFincas(cachedFincas);
-        if (cachedFincas.length === 0) {
-          showNotification('Sin fincas en caché. Conecta a internet para sincronizar', 'warning');
-        }
+      const localFincas = StorageService.getFincas();
+      setFincas(localFincas);
+      if (localFincas.length === 0) {
+        showNotification('Sin fincas almacenadas en el dispositivo', 'warning');
       }
     } catch (error) {
-      const cachedFincas = StorageService.getFincas();
-      setFincas(cachedFincas);
-      showNotification('Error cargando fincas. Usando datos en caché', 'warning');
+      showNotification('Error cargando fincas del almacenamiento', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRefresh = () => {
-    if (isOnline) {
-      loadFincas();
-    } else {
-      showNotification('Sin conexión a internet', 'warning');
-    }
+    loadFincas();
   };
 
   return (
@@ -70,7 +54,7 @@ const FarmSelection: React.FC<FarmSelectionProps> = ({
             </div>
             <button
               onClick={handleRefresh}
-              disabled={!isOnline || isLoading}
+              disabled={isLoading}
               className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />

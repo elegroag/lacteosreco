@@ -31,9 +31,17 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Inicializar almacenamiento y luego verificar usuario guardado
+    // Inicializar almacenamiento, sembrar finca por defecto y luego verificar usuario guardado
     const boot = async () => {
       await initStorage();
+
+      // Sembrar una finca por defecto si no existen
+      const existingFincas = StorageService.getFincas();
+      if (!existingFincas || existingFincas.length === 0) {
+        const defaultFinca: Finca = { id: 1, nombre: 'Finca Principal' };
+        StorageService.saveFincas([defaultFinca]);
+      }
+
       const savedUser = StorageService.getUser();
       if (savedUser) {
         setAppState(prev => ({

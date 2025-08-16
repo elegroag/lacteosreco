@@ -8,7 +8,7 @@ interface LoginProps {
   onShowRegister: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister }) => {
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -115,3 +115,5 @@ export const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowR
     </div>
   );
 };
+
+export default Login;

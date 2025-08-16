@@ -11,7 +11,7 @@ interface FarmSelectionProps {
   isOnline: boolean;
 }
 
-export const FarmSelection: React.FC<FarmSelectionProps> = ({ 
+const FarmSelection: React.FC<FarmSelectionProps> = ({ 
   currentUser, 
   onFarmSelect, 
   showNotification,
@@ -120,3 +120,5 @@ export const FarmSelection: React.FC<FarmSelectionProps> = ({
     </div>
   );
 };
+
+export default FarmSelection;

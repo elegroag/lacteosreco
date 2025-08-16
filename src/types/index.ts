@@ -27,7 +27,6 @@ export interface AppState {
   isLoggedIn: boolean;
   currentUser: User | null;
   selectedFarm: Finca | null;
-  currentView: 'login' | 'register' | 'farmSelection' | 'milkRegistration';
 }
 
 export interface SyncStatus {

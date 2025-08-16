@@ -1,22 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Login } from './components/Login';
-import { FarmSelection } from './components/FarmSelection';
-import { MilkRegistration } from './components/MilkRegistration';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { LogOut, Wifi, WifiOff } from 'lucide-react';
+import { initStorage } from './services/storageAdapter';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { SyncManager } from './components/SyncManager';
 import { Notification } from './components/Notification';
 import { StorageService } from './services/storage';
 import { useConnectivity } from './hooks/useConnectivity';
 import { AppState, Finca } from './types';
-import { LogOut, Wifi, WifiOff, User, Lock, Loader2 } from 'lucide-react';
-// import { ApiService } from './services/api'; // Registro 100% local; no se usa
-import { initStorage } from './services/storageAdapter';
+
+// Lazy load de páginas desde componentes actuales (se moverán a src/pages/)
+const LoginPage = lazy(() => import('./pages/Login'));
+const FarmSelectionPage = lazy(() => import('./pages/FarmSelection'));
+const MilkRegistrationPage = lazy(() => import('./pages/MilkRegistration'));
+const RegisterPage = lazy(() => import('./pages/Register'));
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
     isLoggedIn: false,
     currentUser: null,
-    selectedFarm: null,
-    currentView: 'login'
+    selectedFarm: null
   });
 
   const [notifications, setNotifications] = useState<Array<{
@@ -26,6 +28,7 @@ function App() {
   }>>([]);
 
   const isOnline = useConnectivity();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Inicializar almacenamiento y luego verificar usuario guardado
@@ -36,13 +39,15 @@ function App() {
         setAppState(prev => ({
           ...prev,
           isLoggedIn: true,
-          currentUser: savedUser,
-          currentView: 'farmSelection'
+          currentUser: savedUser
         }));
+        navigate('/fincas', { replace: true });
+      } else {
+        navigate('/login', { replace: true });
       }
     };
     boot();
-   }, []);
+  }, []);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     const id = Date.now();
@@ -57,42 +62,34 @@ function App() {
     setAppState(prev => ({
       ...prev,
       isLoggedIn: true,
-      currentUser: user,
-      currentView: 'farmSelection'
+      currentUser: user
     }));
-  };
-
-  const handleShowRegister = () => {
-    setAppState(prev => ({ ...prev, currentView: 'register' }));
+    navigate('/fincas', { replace: true });
   };
 
   const handleRegistered = (user: any) => {
     setAppState(prev => ({
       ...prev,
       isLoggedIn: true,
-      currentUser: user,
-      currentView: 'farmSelection'
+      currentUser: user
     }));
-  };
-
-  const handleBackToLogin = () => {
-    setAppState(prev => ({ ...prev, currentView: 'login' }));
+    navigate('/fincas', { replace: true });
   };
 
   const handleFarmSelect = (farm: Finca) => {
     setAppState(prev => ({
       ...prev,
-      selectedFarm: farm,
-      currentView: 'milkRegistration'
+      selectedFarm: farm
     }));
+    navigate('/registros');
   };
 
   const handleBackToFarmSelection = () => {
     setAppState(prev => ({
       ...prev,
-      selectedFarm: null,
-      currentView: 'farmSelection'
+      selectedFarm: null
     }));
+    navigate('/fincas');
   };
 
   const handleLogout = () => {
@@ -100,53 +97,10 @@ function App() {
     setAppState({
       isLoggedIn: false,
       currentUser: null,
-      selectedFarm: null,
-      currentView: 'login'
+      selectedFarm: null
     });
     showNotification('Sesión cerrada correctamente', 'info');
-  };
-
-  const renderCurrentView = () => {
-    switch (appState.currentView) {
-      case 'login':
-        return (
-          <Login 
-            onLogin={handleLogin} 
-            showNotification={showNotification}
-            onShowRegister={handleShowRegister}
-          />
-        );
-      case 'register':
-        return (
-          <RegisterView 
-            isOnline={isOnline}
-            onRegistered={handleRegistered}
-            onCancel={handleBackToLogin}
-            showNotification={showNotification}
-          />
-        );
-      case 'farmSelection':
-        return (
-          <FarmSelection
-            currentUser={appState.currentUser}
-            onFarmSelect={handleFarmSelect}
-            showNotification={showNotification}
-            isOnline={isOnline}
-          />
-        );
-      case 'milkRegistration':
-        return (
-          <MilkRegistration
-            currentUser={appState.currentUser}
-            selectedFarm={appState.selectedFarm!}
-            onBack={handleBackToFarmSelection}
-            showNotification={showNotification}
-            isOnline={isOnline}
-          />
-        );
-      default:
-        return null;
-    }
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -179,8 +133,64 @@ function App() {
         </div>
       )}
 
-      {/* Vista actual */}
-      {renderCurrentView()}
+      {/* Rutas */}
+      <Suspense fallback={<div className="p-4 text-center text-gray-600">Cargando...</div>}>
+        <Routes>
+          <Route path="/" element={<Navigate to={appState.isLoggedIn ? '/fincas' : '/login'} replace />} />
+          <Route 
+            path="/login" 
+            element={
+              <LoginPage 
+                onLogin={handleLogin} 
+                showNotification={showNotification}
+                onShowRegister={() => navigate('/register')}
+              />
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <RegisterPage 
+                isOnline={isOnline}
+                onRegistered={handleRegistered}
+                showNotification={showNotification}
+              />
+            } 
+          />
+          <Route 
+            path="/fincas" 
+            element={
+              <ProtectedRoute isLoggedIn={appState.isLoggedIn}>
+                <FarmSelectionPage
+                  currentUser={appState.currentUser}
+                  onFarmSelect={handleFarmSelect}
+                  showNotification={showNotification}
+                  isOnline={isOnline}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/registros" 
+            element={
+              <ProtectedRoute isLoggedIn={appState.isLoggedIn}>
+                {appState.selectedFarm ? (
+                  <MilkRegistrationPage
+                    currentUser={appState.currentUser}
+                    selectedFarm={appState.selectedFarm}
+                    onBack={handleBackToFarmSelection}
+                    showNotification={showNotification}
+                    isOnline={isOnline}
+                  />
+                ) : (
+                  <Navigate to="/fincas" replace />
+                )}
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
 
       {/* Gestor de sincronización */}
       <SyncManager 
@@ -201,115 +211,10 @@ function App() {
   );
 }
 
-// Vista de Registro embebida
-const RegisterView: React.FC<{
-  isOnline: boolean;
-  onRegistered: (user: any) => void;
-  onCancel: () => void;
-  showNotification: (m: string, t: 'success' | 'error' | 'info' | 'warning') => void;
-}> = ({ isOnline, onRegistered, onCancel, showNotification }) => {
-  const [usuario, setUsuario] = useState('');
-  const [contrasena, setContrasena] = useState('');
-  const [confirmar, setConfirmar] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!usuario.trim() || !contrasena.trim()) {
-      showNotification('Usuario y contraseña son requeridos', 'warning');
-      return;
-    }
-    if (contrasena !== confirmar) {
-      showNotification('Las contraseñas no coinciden', 'error');
-      return;
-    }
-    setLoading(true);
-    try {
-      // Registro 100% local (independiente de conectividad)
-      const user = { id: Date.now(), usuario, contrasena };
-      StorageService.saveUser(user);
-      showNotification('Registro local creado. Sesión iniciada.', 'success');
-      onRegistered(user);
-    } catch (err: any) {
-      showNotification(err?.message || 'Error registrando usuario localmente', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Crear cuenta</h1>
-          <p className="text-gray-600">Regístrate para continuar</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ingresa un usuario"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="password"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Crea una contraseña"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confirmar contraseña</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="password"
-                value={confirmar}
-                onChange={(e) => setConfirmar(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Repite la contraseña"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crear cuenta'}
-          </button>
-
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-full mt-2 text-sm text-gray-600 hover:text-gray-900"
-          >
-            Volver al inicio de sesión
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+// Ruta protegida simple
+const ProtectedRoute: React.FC<{ isLoggedIn: boolean; children: React.ReactNode }> = ({ isLoggedIn, children }) => {
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 };
 
 export default App;

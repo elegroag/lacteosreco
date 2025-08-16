@@ -12,7 +12,7 @@ interface MilkRegistrationProps {
   isOnline: boolean;
 }
 
-export const MilkRegistration: React.FC<MilkRegistrationProps> = ({
+const MilkRegistration: React.FC<MilkRegistrationProps> = ({
   currentUser,
   selectedFarm,
   onBack,
@@ -224,3 +224,5 @@ export const MilkRegistration: React.FC<MilkRegistrationProps> = ({
     </div>
   );
 };
+
+export default MilkRegistration;

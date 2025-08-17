@@ -14,6 +14,7 @@ const FarmSelectionPage = lazy(() => import('./pages/FarmSelection'));
 const MilkRegistrationPage = lazy(() => import('./pages/MilkRegistration'));
 const RegisterPage = lazy(() => import('./pages/Register'));
 const SyncPage = lazy(() => import('./pages/Sync'));
+const HistoryPage = lazy(() => import('./pages/History'));
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -212,6 +213,17 @@ function App() {
                   isOnline={isOnline}
                   currentUser={appState.currentUser}
                   showNotification={showNotification}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute isLoggedIn={appState.isLoggedIn}>
+                <HistoryPage
+                 isOnline={isOnline}
+                 currentUser={appState.currentUser}
                 />
               </ProtectedRoute>
             }

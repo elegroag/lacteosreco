@@ -109,7 +109,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    StorageService.clearUser();
+    // No borrar el usuario del almacenamiento persistente
     setAppState({
       isLoggedIn: false,
       currentUser: null,
@@ -236,11 +236,11 @@ function App() {
               </li>
               <li>
                 <NavLink
-                  to="/registros"
+                  to="/history"
                   className={({ isActive }) => `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`}
                 >
                   <Droplet className="w-5 h-5" />
-                  Registros
+                  Historial 
                 </NavLink>
               </li>
               <li>

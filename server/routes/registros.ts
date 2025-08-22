@@ -1,10 +1,12 @@
 import express from 'express';
+import type { Request, Response } from 'express';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { executeQuery } from '../database';
 
 const router = express.Router();
 
 // Crear nuevo registro de leche
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const { fkFinca, cantidad, saldo, fkUsuario, fechaHora } = req.body;
 
@@ -25,7 +27,7 @@ router.post('/', async (req, res) => {
       params = [fkFinca, cantidad, saldo || 0, fkUsuario];
     }
 
-    const result: any = await executeQuery(query, params);
+    const result = await executeQuery(query, params) as ResultSetHeader;
 
     res.status(201).json({ 
       success: true, 
@@ -42,8 +44,18 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Tipado básico de registros entrantes para sync
+type IncomingRegistro = {
+  fkFinca: number;
+  cantidad: number;
+  saldo?: number;
+  fkUsuario: number;
+  fechaHora?: string;
+  tempId?: number | string;
+};
+
 // Sincronizar múltiples registros
-router.post('/sync', async (req, res) => {
+router.post('/sync', async (req: Request, res: Response) => {
   try {
     const { registros } = req.body;
 
@@ -54,10 +66,10 @@ router.post('/sync', async (req, res) => {
       });
     }
 
-    const syncedIds = [];
-    const errors = [];
+    const syncedIds: Array<{ tempId: number | string | undefined; realId: number }> = [];
+    const errors: Array<{ tempId: number | string | undefined; error: string }> = [];
 
-    for (const registro of registros) {
+    for (const registro of registros as IncomingRegistro[]) {
       try {
         const { fkFinca, cantidad, saldo, fkUsuario, fechaHora, tempId } = registro;
 
@@ -75,7 +87,7 @@ router.post('/sync', async (req, res) => {
           params = [fkFinca, cantidad, saldo || 0, fkUsuario];
         }
 
-        const result: any = await executeQuery(query, params);
+        const result = await executeQuery(query, params) as ResultSetHeader;
         syncedIds.push({ tempId, realId: result.insertId });
 
       } catch (error) {
@@ -101,7 +113,7 @@ router.post('/sync', async (req, res) => {
 });
 
 // Obtener registros por finca
-router.get('/finca/:fincaId', async (req, res) => {
+router.get('/finca/:fincaId', async (req: Request, res: Response) => {
   try {
     const { fincaId } = req.params;
     const query = `
@@ -112,7 +124,7 @@ router.get('/finca/:fincaId', async (req, res) => {
       WHERE r.fkFinca = ? 
       ORDER BY r.fechaHora DESC
     `;
-    const results = await executeQuery(query, [fincaId]);
+    const results = await executeQuery(query, [fincaId]) as RowDataPacket[];
 
     res.json({ 
       success: true, 
@@ -129,7 +141,7 @@ router.get('/finca/:fincaId', async (req, res) => {
 });
 
 // Obtener todos los registros
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const query = `
       SELECT r.*, f.nombre as nombreFinca, u.usuario 
@@ -139,7 +151,7 @@ router.get('/', async (req, res) => {
       ORDER BY r.fechaHora DESC
       LIMIT 100
     `;
-    const results = await executeQuery(query);
+    const results = await executeQuery(query) as RowDataPacket[];
 
     res.json({ 
       success: true, 

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MapPin, RefreshCw, Loader2, ArrowRight } from 'lucide-react';
 // import { SyncService } from '../services/sync';
 import { StorageService } from '../services/storage';
-import { Finca } from '../types';
+import type { Finca, User } from '../types';
+import SearchBar from '../components/SearchBar';
 
 interface FarmSelectionProps {
-  currentUser: any;
+  currentUser: User;
   onFarmSelect: (farm: Finca) => void;
   showNotification: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   isOnline: boolean;
@@ -19,12 +20,13 @@ const FarmSelection: React.FC<FarmSelectionProps> = ({
 }) => {
   const [fincas, setFincas] = useState<Finca[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    loadFincas();
-  }, []);
+  const filteredFincas = fincas.filter((f) =>
+    f.nombre.toLowerCase().includes(query.toLowerCase())
+  );
 
-  const loadFincas = async () => {
+  const loadFincas = useCallback(async () => {
     setIsLoading(true);
     try {
       const localFincas = StorageService.getFincas();
@@ -32,12 +34,16 @@ const FarmSelection: React.FC<FarmSelectionProps> = ({
       if (localFincas.length === 0) {
         showNotification('Sin fincas almacenadas en el dispositivo', 'warning');
       }
-    } catch (error) {
+    } catch {
       showNotification('Error cargando fincas del almacenamiento', 'error');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    loadFincas();
+  }, [loadFincas]);
 
   const handleRefresh = () => {
     loadFincas();
@@ -72,23 +78,39 @@ const FarmSelection: React.FC<FarmSelectionProps> = ({
               <p className="text-gray-600">No hay fincas disponibles</p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {fincas.map((finca) => (
-                <button
-                  key={finca.id}
-                  onClick={() => onFarmSelect(finca)}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="bg-green-100 rounded-full p-2">
-                      <MapPin className="w-5 h-5 text-green-600" />
-                    </div>
-                    <span className="font-medium text-gray-900">{finca.nombre}</span>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-gray-400" />
-                </button>
-              ))}
-            </div>
+            <>
+              <SearchBar
+                value={query}
+                onChange={setQuery}
+                placeholder="Buscar finca por nombre..."
+                className="mb-4"
+              />
+
+              {filteredFincas.length === 0 ? (
+                <div className="text-center py-12">
+                  <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No se encontraron fincas para "{query}"</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredFincas.map((finca) => (
+                    <button
+                      key={finca.id}
+                      onClick={() => onFarmSelect(finca)}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-green-100 rounded-full p-2">
+                          <MapPin className="w-5 h-5 text-green-600" />
+                        </div>
+                        <span className="font-medium text-gray-900">{finca.nombre}</span>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-gray-400" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 

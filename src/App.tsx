@@ -192,7 +192,7 @@ function App() {
             element={
               <ProtectedRoute isLoggedIn={appState.isLoggedIn}>
                 <FarmSelectionPage
-                  currentUser={appState.currentUser}
+                  currentUser={appState.currentUser!}
                   onFarmSelect={handleFarmSelect}
                   showNotification={showNotification}
                   isOnline={isOnline}

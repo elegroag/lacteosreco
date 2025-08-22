@@ -1,3 +1,5 @@
+import { Registro } from '../types';
+
 // Configuración de la API
 // En desarrollo web usamos ruta relativa para aprovechar el proxy de Vite y evitar CORS
 // En móvil (Capacitor), configurar VITE_API_BASE_URL, por ejemplo: https://dibeltran03.alwaysdata.net/api
@@ -62,14 +64,14 @@ export const ApiService = {
   },
 
   // Registros
-  createRegistro: async (registro: any) => {
+  createRegistro: async (registro: Registro) => {
     return apiRequest('/registros', {
       method: 'POST',
       body: JSON.stringify(registro),
     });
   },
 
-  syncRegistros: async (registros: any[]) => {
+  syncRegistros: async (registros: Registro[]) => {
     return apiRequest('/registros/sync', {
       method: 'POST',
       body: JSON.stringify({ registros }),

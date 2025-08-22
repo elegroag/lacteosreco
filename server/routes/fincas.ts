@@ -1,10 +1,12 @@
 import express from 'express';
+import type { Request, Response } from 'express';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { executeQuery } from '../database';
 
 const router = express.Router();
 
 // Obtener todas las fincas
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const query = 'SELECT id, nombre, ubicacion, vereda, propietario FROM finca ORDER BY nombre';
     const results = await executeQuery(query);
@@ -24,11 +26,11 @@ router.get('/', async (req, res) => {
 });
 
 // Obtener finca por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const query = 'SELECT * FROM finca WHERE id = ?';
-    const results: any = await executeQuery(query, [id]);
+    const results = await executeQuery(query, [id]) as RowDataPacket[];
 
     if (!Array.isArray(results) || results.length === 0) {
       return res.status(404).json({ 
@@ -52,7 +54,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Crear nueva finca (opcional)
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const { nombre, ubicacion, vereda, propietario } = req.body;
 
@@ -64,7 +66,7 @@ router.post('/', async (req, res) => {
     }
 
     const query = 'INSERT INTO finca (nombre, ubicacion, vereda, propietario) VALUES (?, ?, ?, ?)';
-    const result: any = await executeQuery(query, [nombre, ubicacion || null, vereda || null, propietario || null]);
+    const result = await executeQuery(query, [nombre, ubicacion || null, vereda || null, propietario || null]) as ResultSetHeader;
 
     res.status(201).json({ 
       success: true, 

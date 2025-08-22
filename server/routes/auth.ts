@@ -1,11 +1,13 @@
 import express from 'express';
+import type { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { executeQuery } from '../database';
 
 const router = express.Router();
 
 // Login de usuario
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { usuario, contrasena } = req.body;
 
@@ -18,7 +20,7 @@ router.post('/login', async (req, res) => {
 
     // Buscar usuario en la base de datos
     const query = 'SELECT * FROM user WHERE usuario = ?';
-    const results: any = await executeQuery(query, [usuario]);
+    const results = await executeQuery(query, [usuario]) as RowDataPacket[];
 
     if (!Array.isArray(results) || results.length === 0) {
       return res.status(401).json({ 
@@ -27,7 +29,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const user = results[0];
+    const user = results[0] as RowDataPacket & { id: number; usuario: string; contrasena?: string };
 
     // Verificar contraseña (asumiendo que están hasheadas)
     // Si las contraseñas no están hasheadas, usar comparación directa
@@ -35,8 +37,12 @@ router.post('/login', async (req, res) => {
     
     try {
       // Intentar verificar con bcrypt primero
-      isValidPassword = await bcrypt.compare(contrasena, user.contrasena);
-    } catch (error) {
+      if (typeof user.contrasena === 'string') {
+        isValidPassword = await bcrypt.compare(contrasena, user.contrasena);
+      } else {
+        throw new Error('No hashed password');
+      }
+    } catch {
       // Si falla bcrypt, comparar directamente (contraseñas en texto plano)
       isValidPassword = contrasena === user.contrasena;
     }
@@ -70,7 +76,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Crear usuario (opcional, para testing)
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response) => {
   try {
     const { usuario, contrasena } = req.body;
 
@@ -83,7 +89,7 @@ router.post('/register', async (req, res) => {
 
     // Verificar si el usuario ya existe
     const checkQuery = 'SELECT id FROM user WHERE usuario = ?';
-    const existingUser: any = await executeQuery(checkQuery, [usuario]);
+    const existingUser = await executeQuery(checkQuery, [usuario]) as RowDataPacket[];
 
     if (Array.isArray(existingUser) && existingUser.length > 0) {
       return res.status(409).json({ 
@@ -97,7 +103,7 @@ router.post('/register', async (req, res) => {
 
     // Insertar nuevo usuario
     const insertQuery = 'INSERT INTO user (usuario, contrasena) VALUES (?, ?)';
-    const result: any = await executeQuery(insertQuery, [usuario, hashedPassword]);
+    const result = await executeQuery(insertQuery, [usuario, hashedPassword]) as ResultSetHeader;
 
     res.status(201).json({ 
       success: true, 

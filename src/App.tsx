@@ -6,7 +6,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation, NavLink } from 'reac
 import { Notification } from './components/Notification';
 import { StorageService } from './services/storage';
 import { useConnectivity } from './hooks/useConnectivity';
-import { AppState, Finca } from './types';
+import { AppState, Finca, User } from './types';
 
 // Lazy load de páginas desde componentes actuales (se moverán a src/pages/)
 const LoginPage = lazy(() => import('./pages/Login'));
@@ -46,17 +46,22 @@ function App() {
       }
 
       const savedUser = StorageService.getUser();
-      if (savedUser) {
+      if (savedUser && savedUser.conectado === true) {
         setAppState(prev => ({
           ...prev,
           isLoggedIn: true,
           currentUser: savedUser
         }));
         // Solo auto-navegar si estamos en la raíz para no sobreescribir rutas manuales (p.ej. /sync)
-        if (location.pathname === '/') {
+        if (location.pathname === '/' || location.pathname === '/login') {
           navigate('/fincas', { replace: true });
         }
       } else {
+        setAppState(prev => ({
+          ...prev,
+          isLoggedIn: false,
+          currentUser: null
+        }));
         // Solo redirigir automáticamente desde la raíz
         if (location.pathname === '/') {
           navigate('/login', { replace: true });
@@ -64,7 +69,7 @@ function App() {
       }
     };
     boot();
-  }, [location.pathname]);
+  }, [location, navigate]);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     const id = Date.now();
@@ -75,7 +80,7 @@ function App() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const handleLogin = (user: any) => {
+  const handleLogin = (user: User) => {
     setAppState(prev => ({
       ...prev,
       isLoggedIn: true,
@@ -84,7 +89,7 @@ function App() {
     navigate('/fincas', { replace: true });
   };
 
-  const handleRegistered = (user: any) => {
+  const handleRegistered = (user: User) => {
     setAppState(prev => ({
       ...prev,
       isLoggedIn: true,
@@ -116,6 +121,14 @@ function App() {
       currentUser: null,
       selectedFarm: null
     });
+    //pasar a conectado=false
+    const user = StorageService.getUser();
+    if (user) {
+      StorageService.saveUser({
+        ...user,
+        conectado: false
+      });
+    }
     showNotification('Sesión cerrada correctamente', 'info');
     navigate('/login', { replace: true });
   };

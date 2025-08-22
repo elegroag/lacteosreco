@@ -1,6 +1,7 @@
 import { IStorageAdapter } from './IStorageAdapter';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { Finca, Registro, User } from '../../types';
 
 // Nota: Este adaptador mantiene una caché en memoria para exponer una API síncrona
 // como la de localStorage. Las escrituras a SQLite se hacen de forma asíncrona.
@@ -8,12 +9,12 @@ import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacito
 export class SqliteStorageAdapter implements IStorageAdapter {
     private db: SQLiteDBConnection | null = null;
     private sqlite: SQLiteConnection | null = null;
-    private initialized = false;
+    private initialized: boolean = false;
 
     private cache = {
-        user: null as any | null,
-        fincas: [] as any[],
-        registros: [] as any[],
+        user: null as User | null,
+        fincas: [] as Finca[],
+        registros: [] as Registro[],
         lastSync: null as string | null,
     };
 
@@ -45,7 +46,8 @@ export class SqliteStorageAdapter implements IStorageAdapter {
                     contrasena TEXT,
                     email TEXT,
                     telefono TEXT,
-                    cedula TEXT
+                    cedula TEXT,
+                    conectado INTEGER DEFAULT 0
                 );
             `);
 
@@ -72,8 +74,12 @@ export class SqliteStorageAdapter implements IStorageAdapter {
         }
     }
 
+    get isInitialized(): boolean {
+        return this.initialized;
+    }
+
     // Usuario
-    saveUser(user: any): void {
+    saveUser(user: User): void {
         this.cache.user = user;
         this.persistMeta('USER', JSON.stringify(user));
         // Persistir también en la tabla user (un solo registro)
@@ -82,7 +88,7 @@ export class SqliteStorageAdapter implements IStorageAdapter {
                 if (!this.db) return;
                 await this.db.run('DELETE FROM user');
                 await this.db.run(
-                    `INSERT INTO user (id, usuario, contrasena, email, telefono, cedula) VALUES (?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO user (id, usuario, contrasena, email, telefono, cedula, conectado) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [
                         user?.id ?? null,
                         user?.usuario ?? '',
@@ -90,6 +96,7 @@ export class SqliteStorageAdapter implements IStorageAdapter {
                         user?.email ?? null,
                         user?.telefono ?? null,
                         user?.cedula ?? null,
+                        user?.conectado ?? null,
                     ]
                 );
             } catch (err) {
@@ -97,9 +104,11 @@ export class SqliteStorageAdapter implements IStorageAdapter {
             }
         })();
     }
-    getUser(): any | null {
+
+    getUser(): User | null {
         return this.cache.user;
     }
+
     clearUser(): void {
         this.cache.user = null;
         this.persistMeta('USER', null);
@@ -114,16 +123,16 @@ export class SqliteStorageAdapter implements IStorageAdapter {
     }
 
     // Fincas
-    saveFincas(fincas: any[]): void {
+    saveFincas(fincas: Finca[]): void {
         this.cache.fincas = fincas || [];
         this.persistMeta('FINCAS', JSON.stringify(this.cache.fincas));
     }
-    getFincas(): any[] {
+    getFincas(): Finca[] {
         return this.cache.fincas;
     }
 
     // Registros
-    saveRegistro(registro: any): any {
+    saveRegistro(registro: Registro): Registro {
         const newRegistro = {
             ...registro,
             id: registro?.id ?? Date.now(),
@@ -133,17 +142,17 @@ export class SqliteStorageAdapter implements IStorageAdapter {
         this.insertRegistroAsync(newRegistro);
         return newRegistro;
     }
-    getRegistros(): any[] {
+    getRegistros(): Registro[] {
         // devolver copia superficial para evitar mutaciones externas
         return [...this.cache.registros];
     }
-    getPendingRegistros(): any[] {
-        return this.cache.registros.filter((r: any) => !r.synced);
+    getPendingRegistros(): Registro[] {
+        return this.cache.registros.filter((r: Registro) => !r.synced);
     }
     markRegistrosAsSynced(syncedIds: number[]): void {
         if (!syncedIds || syncedIds.length === 0) return;
         const setIds = new Set(syncedIds);
-        this.cache.registros = this.cache.registros.map((r: any) => (setIds.has(r.id) ? { ...r, synced: true } : r));
+        this.cache.registros = this.cache.registros.map((r: Registro) => (setIds.has(r.id) ? { ...r, synced: true } : r));
         this.updateSyncedAsync(syncedIds);
     }
 
@@ -191,7 +200,7 @@ export class SqliteStorageAdapter implements IStorageAdapter {
         // registros
         const regRes = await this.db.query('SELECT id, fkFinca, cantidad, saldo, fechaHora, observaciones, fkUsuario, synced FROM registros ORDER BY date(fechaHora) DESC');
         const regs = regRes.values || [];
-        this.cache.registros = regs.map((r: any) => ({
+        this.cache.registros = regs.map((r: Registro) => ({
             id: r.id,
             fkFinca: r.fkFinca,
             cantidad: r.cantidad,
@@ -216,7 +225,7 @@ export class SqliteStorageAdapter implements IStorageAdapter {
         }
     }
 
-    private async insertRegistroAsync(r: any) {
+    private async insertRegistroAsync(r: Registro) {
         try {
             if (!this.db) return;
             await this.db.run(
@@ -234,7 +243,7 @@ export class SqliteStorageAdapter implements IStorageAdapter {
             if (!this.db || ids.length === 0) return;
             // Construir placeholders
             const placeholders = ids.map(() => '?').join(',');
-            await this.db.run(`UPDATE registros SET synced = 1 WHERE id IN (${placeholders})`, ids as any);
+            await this.db.run(`UPDATE registros SET synced = 1 WHERE id IN (${placeholders})`, ids as unknown as number[]);
         } catch (err) {
             console.warn('[SqliteStorageAdapter] updateSyncedAsync error', err);
         }

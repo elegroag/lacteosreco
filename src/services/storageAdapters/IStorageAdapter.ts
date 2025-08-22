@@ -1,9 +1,13 @@
+import { User } from "../../types";
+
 export interface IStorageAdapter {
     init(): Promise<void>;
 
     // Usuario
-    saveUser(user: any): void;
-    getUser(): any | null;
+    saveUser(user: User): void;
+
+    getUser(): User | null;
+    
     clearUser(): void;
 
     // Fincas

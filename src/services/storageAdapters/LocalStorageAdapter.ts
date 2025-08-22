@@ -1,3 +1,4 @@
+import { Finca, Registro, User } from '../../types';
 import { IStorageAdapter, STORAGE_KEYS } from './IStorageAdapter';
 
 export class LocalStorageAdapter implements IStorageAdapter {
@@ -6,28 +7,30 @@ export class LocalStorageAdapter implements IStorageAdapter {
     }
 
     // Usuario
-    saveUser(user: any): void {
+    saveUser(user: User): void {
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     }
-    getUser(): any | null {
+
+    getUser(): User | null {
         const user = localStorage.getItem(STORAGE_KEYS.USER);
         return user ? JSON.parse(user) : null;
     }
+
     clearUser(): void {
         localStorage.removeItem(STORAGE_KEYS.USER);
     }
 
     // Fincas
-    saveFincas(fincas: any[]): void {
+    saveFincas(fincas: Finca[]): void {
         localStorage.setItem(STORAGE_KEYS.FINCAS, JSON.stringify(fincas));
     }
-    getFincas(): any[] {
+    getFincas(): Finca[] {
         const fincas = localStorage.getItem(STORAGE_KEYS.FINCAS);
         return fincas ? JSON.parse(fincas) : [];
     }
 
     // Registros
-    saveRegistro(registro: any): any {
+    saveRegistro(registro: Registro): Registro {
         const registros = this.getRegistros();
         const newRegistro = {
             ...registro,
@@ -38,16 +41,16 @@ export class LocalStorageAdapter implements IStorageAdapter {
         localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(registros));
         return newRegistro;
     }
-    getRegistros(): any[] {
+    getRegistros(): Registro[] {
         const registros = localStorage.getItem(STORAGE_KEYS.REGISTROS);
         return registros ? JSON.parse(registros) : [];
     }
-    getPendingRegistros(): any[] {
-        return this.getRegistros().filter((r: any) => !r.synced);
+    getPendingRegistros(): Registro[] {
+        return this.getRegistros().filter((r: Registro) => !r.synced);
     }
     markRegistrosAsSynced(syncedIds: number[]): void {
         const registros = this.getRegistros();
-        const updated = registros.map((r: any) => (syncedIds.includes(r.id) ? { ...r, synced: true } : r));
+        const updated = registros.map((r: Registro) => (syncedIds.includes(r.id) ? { ...r, synced: true } : r));
         localStorage.setItem(STORAGE_KEYS.REGISTROS, JSON.stringify(updated));
     }
 

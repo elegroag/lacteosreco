@@ -6,6 +6,7 @@ export interface User {
   email?: string;
   telefono?: string;
   cedula?: string;
+  conectado?: boolean;
 }
 
 export interface Finca {
@@ -23,6 +24,11 @@ export interface RegistroLeche {
   synced?: boolean;
 }
 
+export interface Registro extends RegistroLeche {
+  id: number;
+  observaciones?: string;
+}
+
 export interface AppState {
   isLoggedIn: boolean;
   currentUser: User | null;
@@ -34,3 +40,10 @@ export interface SyncStatus {
   pendingRecords: number;
   lastSync: string | null;
 }
+
+export type Error = {
+  message?: string;
+  code?: string;
+  status?: number;
+}
+  

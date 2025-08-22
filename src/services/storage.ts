@@ -1,3 +1,4 @@
+import { Finca, Registro, User } from '../types';
 import { getStorageAdapter } from './storageAdapter';
 
 // Servicio para manejo de almacenamiento local/nativo vía adaptador
@@ -7,11 +8,11 @@ export class StorageService {
   }
 
   // Usuario logueado
-  static saveUser(user: any) {
+  static saveUser(user: User) {
     this.a.saveUser(user);
   }
 
-  static getUser() {
+  static getUser(): User | null {
     return this.a.getUser();
   }
 
@@ -20,21 +21,21 @@ export class StorageService {
   }
 
   // Fincas
-  static saveFincas(fincas: any[]) {
+  static saveFincas(fincas: Finca[]) {
     this.a.saveFincas(fincas);
   }
 
   static getFincas() {
-    return this.a.getFincas();
+    return this.a.getFincas() as Finca[];
   }
 
   // Registros de leche
-  static saveRegistro(registro: any) {
+  static saveRegistro(registro: Registro) {
     return this.a.saveRegistro(registro);
   }
 
   static getRegistros() {
-    return this.a.getRegistros();
+    return this.a.getRegistros() as Registro[];
   }
 
   static markRegistrosAsSynced(syncedIds: number[]) {
@@ -42,7 +43,7 @@ export class StorageService {
   }
 
   static getPendingRegistros() {
-    return this.a.getPendingRegistros();
+    return this.a.getPendingRegistros() as Registro[];
   }
 
   // Última sincronización
@@ -51,6 +52,6 @@ export class StorageService {
   }
 
   static getLastSync() {
-    return this.a.getLastSync();
+    return this.a.getLastSync() as string;
   }
 }

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { User, Lock, Loader2 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { useNavigate } from 'react-router-dom';
+import type { User as Usuario } from '../types';
 
 type Props = {
   isOnline: boolean;
-  onRegistered: (user: any) => void;
+  onRegistered: (user: Usuario) => void;
   showNotification: (m: string, t: 'success' | 'error' | 'info' | 'warning') => void;
 };
 
@@ -33,8 +34,12 @@ const Register: React.FC<Props> = ({ isOnline, onRegistered, showNotification })
       StorageService.saveUser(user);
       showNotification('Registro local creado. Sesión iniciada.', 'success');
       onRegistered(user);
-    } catch (err: any) {
-      showNotification(err?.message || 'Error registrando usuario localmente', 'error');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        showNotification(err.message, 'error');
+      } else {
+        showNotification('Error registrando usuario localmente', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -50,6 +55,10 @@ const Register: React.FC<Props> = ({ isOnline, onRegistered, showNotification })
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Crear cuenta</h1>
           <p className="text-gray-600">Regístrate para continuar</p>
         </div>
+
+        {!isOnline && (
+          <p className="text-xs text-amber-600 mb-4 text-center">Estás sin conexión. El registro se guardará localmente.</p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

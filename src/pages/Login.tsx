@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { User, Lock, LogIn, Loader2 } from 'lucide-react';
+import { User as UserIcon, Lock, LogIn, Loader2 } from 'lucide-react';
 import { StorageService } from '../services/storage';
+import type { User as AppUser } from '../types';
 
 interface LoginProps {
-  onLogin: (user: any) => void;
+  onLogin: (user: AppUser) => void;
   showNotification: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   onShowRegister: () => void;
 }
@@ -24,14 +25,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister
     setIsLoading(true);
     
     try {
-      const savedUser = StorageService.getUser();
-      if (savedUser && savedUser.usuario === usuario && savedUser.contrasena === contrasena) {
-        onLogin(savedUser);
+      const dataUser = StorageService.getUser();
+      if (dataUser && dataUser.usuario === usuario && dataUser.contrasena === contrasena) {
+        onLogin(dataUser);
+        //pasar a conectado=true
+        dataUser.conectado = true;
+        StorageService.saveUser(dataUser);
         showNotification('¡Bienvenido! Sesión iniciada correctamente', 'success');
       } else {
         showNotification('Usuario o contraseña incorrectos', 'error');
       }
-    } catch (error) {
+    } catch {
       showNotification('Error validando credenciales en almacenamiento local', 'error');
     } finally {
       setIsLoading(false);
@@ -43,7 +47,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-green-600" />
+            <UserIcon className="w-8 h-8 text-green-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Recolección de Leche</h1>
           <p className="text-gray-600">Ingresa tus credenciales</p>
@@ -55,7 +59,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister
               Usuario
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 value={usuario}
@@ -107,9 +111,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, showNotification, onShowRegister
         </div>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Usuarios de prueba:</p>
-          <p>admin / 123456</p>
-          <p>recolector1 / pass123</p>
+          <p>¿Has olvidado tu contraseña?</p>
         </div>
       </div>
     </div>
